@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from gurobipy import Model, GRB
-from util import Utility as util
+from util_ndf import Utility as util
 
 NEL_req_percentile = util.NEL_req_percentile
 cp_price = 0.59 # $/kg
