@@ -4,8 +4,8 @@ from gurobipy import Model, GRB
 from util import Utility as util
 
 NEL_req_percentile = util.NEL_req_percentile
-cp_price = 0.59 # $/kg
-nel_price = 0.06 # $/Mcal
+# cp_price = 0.59 # $/kg
+# nel_price = 0.06 # $/Mcal
 
 def optimize(animal_count, nutrient_req_table, crop_nutrient_table, methane_eqn, obj):
     """
@@ -82,12 +82,7 @@ def optimize(animal_count, nutrient_req_table, crop_nutrient_table, methane_eqn,
 
     # PART 2: FEED MIN MAX CONSTRAINTS
     crop_min_max_df = util.get_min_max_feed_table()
-    # print(crop_min_max_df)
-
     for c in crops:
-        # min_val = (crop_min_max_df.loc[c, 'min'] * animal_count * 365) / 1000
-        # max_val = (crop_min_max_df.loc[c, 'max'] * animal_count * 365) / 1000
-
         m.addConstr(feed_on_farm[c]/animal_count >= crop_min_max_df.loc[c, 'min'], name=f"min_crop_{c}")
         m.addConstr(feed_on_farm[c]/animal_count <= crop_min_max_df.loc[c, 'max'], name=f"max_crop_{c}")
 
@@ -141,8 +136,13 @@ def optimize(animal_count, nutrient_req_table, crop_nutrient_table, methane_eqn,
         name="dndf_calc"
     )
 
+    price_df = util.get_feed_price_table()
     m.addConstr(
-        cost == cp*cp_price + nel*nel_price,
+        # cost == cp*cp_price + nel*nel_price,
+        cost == 
+        (
+            sum(feed_on_farm[c] * price_df.loc[c,'price ($/kg)'] for c in crops)
+        ) / animal_count,
         name="cost_calc"
     )
 
@@ -275,9 +275,12 @@ print(crop_nutrient_table)
 
 # # Check existing diet
 # diet_df = pd.read_csv('./data/current_Arlington_diet.csv')
+# price_df = pd.read_csv('./data/feed_price.csv')
 # print(diet_df)
 # nutrient_composition_df = util.calc_nutrient_composition(diet_df, crop_nutrient_table)
 # print(nutrient_composition_df.T)
+# price = util.calc_price(diet_df, price_df)
+# print("feed cost per cow per day: ", price)
 # methane = util.calc_methane(nutrient_composition_df, 'NASEM')
 # print("NASEM methane:", methane)
 # methane = util.calc_methane(nutrient_composition_df, 'Ellis')

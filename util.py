@@ -77,6 +77,10 @@ class Utility:
         # users can change the csv path, but usually considered static
         crop_min_max_df = pd.read_csv("./data/min_max_crop_in_diet.csv").set_index('Ingredient')
         return crop_min_max_df
+    
+    def get_feed_price_table():
+        price_df = pd.read_csv("./data/feed_price.csv").set_index('Ingredient')
+        return price_df
 
     def get_cow_raw_data(csv_path):
         # LACT	DIM	MILK	FAT	PROTEIN	BW	DMI NEL
@@ -156,6 +160,11 @@ class Utility:
         for nutrient in ['CP', 'NDF', 'STARCH', 'FAT', 'TFA', 'DNDF']:
             nutrient_composition[nutrient] = nutrient_composition[nutrient] * 100
         return pd.DataFrame([nutrient_composition])
+    
+    def calc_price(crop_df, price_df):
+        # calculate price for a given diet
+        price = (crop_df['As fed'] * price_df['price ($/kg)'].values).sum()
+        return price
     
     def calc_methane(nutrient_composition, methane_eqn):
         # nutrient_composition the dataframe from calc_nutrient_composition()
