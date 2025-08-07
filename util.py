@@ -76,6 +76,7 @@ class Utility:
         # Read the min and max feed amounts (unit: kg (as fed)) from the CSV file
         # users can change the csv path, but usually considered static
         crop_min_max_df = pd.read_csv("./data/min_max_crop_in_diet.csv").set_index('Ingredient')
+        # crop_min_max_df = pd.read_csv("./data/min_max_crop_in_diet_30pct.csv").set_index('Ingredient')
         return crop_min_max_df
     
     def get_feed_price_table():
