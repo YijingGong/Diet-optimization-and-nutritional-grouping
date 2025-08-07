@@ -80,6 +80,25 @@ def optimize(animal_count, nutrient_req_table, crop_nutrient_table, methane_eqn,
             name=f"{n.lower()}_calc_min"
         )
 
+    # forage constraint (forage take 40% to 60% of DM)
+    m.addConstr(
+        (
+            feed_on_farm['Corn silage'] * crop_nutrient_table.loc['Corn silage','DM']
+         + 
+            feed_on_farm['Legume silage, mid maturity'] * crop_nutrient_table.loc['Legume silage, mid maturity','DM']
+         )/animal_count >= 0.4 * dmi,
+        name="forage_min"
+    )
+
+    m.addConstr(
+        (
+            feed_on_farm['Corn silage'] * crop_nutrient_table.loc['Corn silage','DM']
+         + 
+            feed_on_farm['Legume silage, mid maturity'] * crop_nutrient_table.loc['Legume silage, mid maturity','DM']
+         )/animal_count <= 0.6 * dmi,
+        name="forage_max"
+    )
+
     # PART 2: FEED MIN MAX CONSTRAINTS
     crop_min_max_df = util.get_min_max_feed_table()
     for c in crops:
@@ -290,5 +309,5 @@ print(crop_nutrient_table)
 DM_vary = 0.01
 NEL_vary = 0.01
 cow_df = util.get_cow_raw_data('./data/cow_raw_data.csv') 
-group_and_opt(2,'nel', cow_df, crop_nutrient_table, DM_vary, NEL_vary, methane_eqn='NASEM', obj = 'both')
+group_and_opt(1,'dim', cow_df, crop_nutrient_table, DM_vary, NEL_vary, methane_eqn='NASEM', obj = 'cost')
 
