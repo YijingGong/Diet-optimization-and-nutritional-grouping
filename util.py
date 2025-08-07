@@ -1,8 +1,23 @@
 import pandas as pd
 import numpy as np
+import scipy.stats as stats
 
 class Utility:
-    NEL_req_percentile = 83
+    # NEL_req_percentile = 83
+    lead_factor = {
+        1: [1.33], 
+        2: [1.30, 1.19], # low energy group, high energy group
+        3: [1.29, 1.21, 1.15] # low, mid, high energy group, respectively
+    }
+    
+    def convert_lead_factor_to_pct(lead_factor, milk_mean, milk_std):
+        # Calculate Z-score: how many SD above mean
+        Z = (lead_factor - 1) * milk_mean / milk_std
+        # Convert Z-score to percentile
+        percentile = stats.norm.cdf(Z)  # returns percentile as a decimal (e.g., 0.83)
+        percentile_pct = percentile*100
+        print(f"Lead factor {lead_factor} corresponds to the {percentile_pct:.1f}th percentile animal.")
+        return percentile_pct
 
     ## nutritional requirements
     def construct_nutritional_req_table(DM_baseline, NEL_baseline, DM_vary, NEL_vary):
@@ -72,11 +87,14 @@ class Utility:
         return crop_nutrient_table
     
     def get_min_max_feed_table():
-        # PLACEHOLDER FOR NOW
         # Read the min and max feed amounts (unit: kg (as fed)) from the CSV file
-        # users can change the csv path, but usually considered static
         crop_min_max_df = pd.read_csv("./data/min_max_crop_in_diet.csv").set_index('Ingredient')
+        # crop_min_max_df = pd.read_csv("./data/min_max_crop_in_diet_30pct.csv").set_index('Ingredient')
         return crop_min_max_df
+    
+    def get_feed_price_table():
+        price_df = pd.read_csv("./data/feed_price.csv").set_index('Ingredient')
+        return price_df
 
     def get_cow_raw_data(csv_path):
         # LACT	DIM	MILK	FAT	PROTEIN	BW	DMI NEL
@@ -128,7 +146,7 @@ class Utility:
         return group1_df, group2_df, group3_df
 
     @staticmethod
-    def get_descriptive_stats(cow_df):
+    def get_descriptive_stats(cow_df, NEL_req_percentile):
         # Calculate descriptive statistics
         print("cow number:", len(cow_df))
         stats = {}
@@ -136,7 +154,7 @@ class Utility:
             if k != 'ID':
                 stats[k+'_mean'] = cow_df[k].mean(),
                 stats[k+'_std'] = cow_df[k].std()
-        stats['NEL_req'] = np.percentile(cow_df['NEL'], Utility.NEL_req_percentile) # NOTE: this is the 81.8 percentile of NEL, based on Arlington data (Pupo, 2024)
+        stats['NEL_req'] = np.percentile(cow_df['NEL'], NEL_req_percentile) 
         stats_df = pd.DataFrame(stats).transpose()
         return stats_df
     
@@ -156,6 +174,11 @@ class Utility:
         for nutrient in ['CP', 'NDF', 'STARCH', 'FAT', 'TFA', 'DNDF']:
             nutrient_composition[nutrient] = nutrient_composition[nutrient] * 100
         return pd.DataFrame([nutrient_composition])
+    
+    def calc_price(crop_df, price_df):
+        # calculate price for a given diet
+        price = (crop_df['As fed'] * price_df['price ($/kg)'].values).sum()
+        return price
     
     def calc_methane(nutrient_composition, methane_eqn):
         # nutrient_composition the dataframe from calc_nutrient_composition()

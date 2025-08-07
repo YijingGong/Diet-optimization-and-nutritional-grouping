@@ -3,9 +3,10 @@ import numpy as np
 from gurobipy import Model, GRB
 from util import Utility as util
 
-NEL_req_percentile = util.NEL_req_percentile
-cp_price = 0.59 # $/kg
-nel_price = 0.06 # $/Mcal
+# NEL_req_percentile = util.NEL_req_percentile
+lead_factor = util.lead_factor
+# cp_price = 0.59 # $/kg
+# nel_price = 0.06 # $/Mcal
 
 def optimize(animal_count, nutrient_req_table, crop_nutrient_table, methane_eqn, obj):
     """
@@ -82,12 +83,7 @@ def optimize(animal_count, nutrient_req_table, crop_nutrient_table, methane_eqn,
 
     # PART 2: FEED MIN MAX CONSTRAINTS
     crop_min_max_df = util.get_min_max_feed_table()
-    # print(crop_min_max_df)
-
     for c in crops:
-        # min_val = (crop_min_max_df.loc[c, 'min'] * animal_count * 365) / 1000
-        # max_val = (crop_min_max_df.loc[c, 'max'] * animal_count * 365) / 1000
-
         m.addConstr(feed_on_farm[c]/animal_count >= crop_min_max_df.loc[c, 'min'], name=f"min_crop_{c}")
         m.addConstr(feed_on_farm[c]/animal_count <= crop_min_max_df.loc[c, 'max'], name=f"max_crop_{c}")
 
@@ -141,8 +137,13 @@ def optimize(animal_count, nutrient_req_table, crop_nutrient_table, methane_eqn,
         name="dndf_calc"
     )
 
+    price_df = util.get_feed_price_table()
     m.addConstr(
-        cost == cp*cp_price + nel*nel_price,
+        # cost == cp*cp_price + nel*nel_price,
+        cost == 
+        (
+            sum(feed_on_farm[c] * price_df.loc[c,'price ($/kg)'] for c in crops)
+        ) / animal_count,
         name="cost_calc"
     )
 
@@ -212,8 +213,11 @@ def group_and_opt(group_num, criteria, cow_df, crop_nutrient_table, DM_vary, NEL
         group1_df = cow_df
     elif group_num == 2:
         print(">>>Grouping into 2 groups with same size based on", criteria)
+        # df1 requires lower energy than df2 
         if criteria == 'dim':
-            group1_df, group2_df = util.two_group_by_dim(cow_df)
+            # group by DIM, low DIM requires high energy, high DIM requires low energy; 
+            # so reversed to  use the lead factor consistently with others
+            group2_df, group1_df = util.two_group_by_dim(cow_df) 
         elif criteria == 'nel':
             group1_df, group2_df = util.two_group_by_nel(cow_df)
         elif criteria == 'milk':
@@ -221,9 +225,12 @@ def group_and_opt(group_num, criteria, cow_df, crop_nutrient_table, DM_vary, NEL
         else:
             raise ValueError("Invalid criteria. Use 'dim', 'nel', or 'milk'.")
     elif group_num == 3:
+        # df1 requires lower energy than df2 than df3
         print(">>>Grouping into 3 groups with same size based on", criteria)
         if criteria == 'dim':
-            group1_df, group2_df, group3_df = util.three_group_by_dim(cow_df)
+            # group by DIM, low DIM requires high energy, high DIM requires low energy; 
+            # so reversed to  use the lead factor consistently with others
+            group3_df, group2_df, group1_df = util.three_group_by_dim(cow_df)
         elif criteria == 'nel':
             group1_df, group2_df, group3_df = util.three_group_by_nel(cow_df)
         elif criteria == 'milk':
@@ -233,21 +240,40 @@ def group_and_opt(group_num, criteria, cow_df, crop_nutrient_table, DM_vary, NEL
     else:
         raise ValueError("Invalid group number. Use 1, 2, or 3.")
 
-    print("Group 1 stats:", util.get_descriptive_stats(group1_df))
-    nutrient_req_table1 = util.construct_nutritional_req_table(DM_baseline=group1_df['DMI'].mean(), NEL_baseline=np.percentile(group1_df['NEL'], NEL_req_percentile), DM_vary=DM_vary, NEL_vary=NEL_vary)
-    print("Nutritional requirement table for Group 1:")
-    print(nutrient_req_table1)
-    results_df1, feed_df1 = optimize(len(group1_df), nutrient_req_table1, crop_nutrient_table, methane_eqn=methane_eqn, obj=obj)
-    print(">>>Results for Group 1:")
-    print(results_df1)
-    print(">>>Feed for Group 1:")
-    print(feed_df1)
-    results_df1.to_csv('results_group1.csv', index=False)
-    feed_df1.to_csv('feed_group1.csv', index=False)
+    if group_num == 1:
+        NEL_req_percentile = util.convert_lead_factor_to_pct(lead_factor[1][0], group1_df['MILK'].mean(), group1_df['MILK'].std())
+        print("Single group stats:", util.get_descriptive_stats(group1_df, NEL_req_percentile))
+        nutrient_req_table1 = util.construct_nutritional_req_table(DM_baseline=group1_df['DMI'].mean(), NEL_baseline=np.percentile(group1_df['NEL'], NEL_req_percentile), DM_vary=DM_vary, NEL_vary=NEL_vary)
+        print("Nutritional requirement table for Single group:")
+        print(nutrient_req_table1)
+        results_df1, feed_df1 = optimize(len(group1_df), nutrient_req_table1, crop_nutrient_table, methane_eqn=methane_eqn, obj=obj)
+        print(">>>Results for Single group:")
+        print(results_df1)
+        print(">>>Feed for Single group:")
+        print(feed_df1)
+        results_df1.to_csv('results_single_group.csv', index=False)
+        feed_df1.to_csv('feed_single_group.csv', index=False)
 
-    if group_num >= 2:
-        print("Group 2 stats:", util.get_descriptive_stats(group2_df))
-        nutrient_req_table2 = util.construct_nutritional_req_table(DM_baseline=group2_df['DMI'].mean(), NEL_baseline=np.percentile(group2_df['NEL'], NEL_req_percentile), DM_vary=DM_vary, NEL_vary=NEL_vary)
+    elif group_num == 2:
+        NEL_req_percentile = util.convert_lead_factor_to_pct(lead_factor[2][0], group1_df['MILK'].mean(), group1_df['MILK'].std())
+        print("Group 1 stats:", util.get_descriptive_stats(group1_df, NEL_req_percentile))
+        nutrient_req_table1 = util.construct_nutritional_req_table(DM_baseline=group1_df['DMI'].mean(), NEL_baseline=np.percentile(group1_df['NEL'], NEL_req_percentile), DM_vary=DM_vary, NEL_vary=NEL_vary)
+        print("Nutritional requirement table for Group 1:")
+        print(nutrient_req_table1)
+        results_df1, feed_df1 = optimize(len(group1_df), nutrient_req_table1, crop_nutrient_table, methane_eqn=methane_eqn, obj=obj)
+        print(">>>Results for Group 1:")
+        print(results_df1)
+        print(">>>Feed for Group 1:")
+        print(feed_df1)
+        results_df1.to_csv('results_group1.csv', index=False)
+        feed_df1.to_csv('feed_group1.csv', index=False)
+
+        NEL_req_percentile = util.convert_lead_factor_to_pct(lead_factor[2][1], group1_df['MILK'].mean(), group1_df['MILK'].std())
+        print("Group 2 stats:", util.get_descriptive_stats(group2_df, NEL_req_percentile))
+        nutrient_req_table2 = util.construct_nutritional_req_table(DM_baseline=group2_df['DMI'].mean(), 
+                                                                   NEL_baseline=np.percentile(group1_df['NEL'], NEL_req_percentile), 
+                                                                   DM_vary=DM_vary, 
+                                                                   NEL_vary=NEL_vary)
         results_df2, feed_df2 = optimize(len(group2_df), nutrient_req_table2, crop_nutrient_table, methane_eqn=methane_eqn, obj=obj)
         print(">>>Results for Group 2:")
         print(results_df2)
@@ -258,16 +284,43 @@ def group_and_opt(group_num, criteria, cow_df, crop_nutrient_table, DM_vary, NEL
         print("avg cost:", (results_df1.loc[results_df1['Variable'] == '$/cow/d', 'Value'].values[0]+results_df2.loc[results_df2['Variable'] == '$/cow/d', 'Value'].values[0])/2)
         print("avg methane:", (results_df1.loc[results_df1['Variable'] == 'methane (g/cow/d)', 'Value'].values[0]+results_df2.loc[results_df2['Variable'] == 'methane (g/cow/d)', 'Value'].values[0])/2)
     
-        if group_num == 3: # Group 3 (if applicable)
-            print("Group 3 stats:", util.get_descriptive_stats(group3_df))
-            nutrient_req_table3 = util.construct_nutritional_req_table(DM_baseline=group3_df['DMI'].mean(), NEL_baseline=np.percentile(group3_df['NEL'], NEL_req_percentile), DM_vary=DM_vary, NEL_vary=NEL_vary)
-            results_df3, feed_df3 = optimize(len(group3_df), nutrient_req_table3, crop_nutrient_table, methane_eqn=methane_eqn, obj=obj)
-            print(">>>Results for Group 3:")
-            print(results_df3)
-            print(">>>Feed for Group 3:")
-            print(feed_df3)
-            results_df3.to_csv('results_group3.csv', index=False) 
-            feed_df3.to_csv('feed_group3.csv', index=False)
+    elif group_num == 3: # Group 3 (if applicable)
+        NEL_req_percentile = util.convert_lead_factor_to_pct(lead_factor[3][0], group1_df['MILK'].mean(), group1_df['MILK'].std())
+        print("Group 1 stats:", util.get_descriptive_stats(group1_df, NEL_req_percentile))
+        nutrient_req_table1 = util.construct_nutritional_req_table(DM_baseline=group1_df['DMI'].mean(), NEL_baseline=np.percentile(group1_df['NEL'], NEL_req_percentile), DM_vary=DM_vary, NEL_vary=NEL_vary)
+        print("Nutritional requirement table for Group 1:")
+        print(nutrient_req_table1)
+        results_df1, feed_df1 = optimize(len(group1_df), nutrient_req_table1, crop_nutrient_table, methane_eqn=methane_eqn, obj=obj)
+        print(">>>Results for Group 1:")
+        print(results_df1)
+        print(">>>Feed for Group 1:")
+        print(feed_df1)
+        results_df1.to_csv('results_group1.csv', index=False)
+        feed_df1.to_csv('feed_group1.csv', index=False)
+
+        NEL_req_percentile = util.convert_lead_factor_to_pct(lead_factor[3][1], group1_df['MILK'].mean(), group1_df['MILK'].std())
+        print("Group 2 stats:", util.get_descriptive_stats(group2_df, NEL_req_percentile))
+        nutrient_req_table2 = util.construct_nutritional_req_table(DM_baseline=group2_df['DMI'].mean(), NEL_baseline=np.percentile(group1_df['NEL'], NEL_req_percentile), DM_vary=DM_vary, NEL_vary=NEL_vary)
+        results_df2, feed_df2 = optimize(len(group2_df), nutrient_req_table2, crop_nutrient_table, methane_eqn=methane_eqn, obj=obj)
+        print(">>>Results for Group 2:")
+        print(results_df2)
+        print(">>>Feed for Group 2:")
+        print(feed_df2)
+        results_df2.to_csv('results_group2.csv', index=False) 
+        feed_df2.to_csv('feed_group2.csv', index=False)
+        print("avg cost:", (results_df1.loc[results_df1['Variable'] == '$/cow/d', 'Value'].values[0]+results_df2.loc[results_df2['Variable'] == '$/cow/d', 'Value'].values[0])/2)
+        print("avg methane:", (results_df1.loc[results_df1['Variable'] == 'methane (g/cow/d)', 'Value'].values[0]+results_df2.loc[results_df2['Variable'] == 'methane (g/cow/d)', 'Value'].values[0])/2)
+
+        NEL_req_percentile = util.convert_lead_factor_to_pct(lead_factor[3][2], group1_df['MILK'].mean(), group1_df['MILK'].std())
+        print("Group 3 stats:", util.get_descriptive_stats(group3_df, NEL_req_percentile))
+        nutrient_req_table3 = util.construct_nutritional_req_table(DM_baseline=group3_df['DMI'].mean(), NEL_baseline=np.percentile(group1_df['NEL'], NEL_req_percentile), DM_vary=DM_vary, NEL_vary=NEL_vary)
+        results_df3, feed_df3 = optimize(len(group3_df), nutrient_req_table3, crop_nutrient_table, methane_eqn=methane_eqn, obj=obj)
+        print(">>>Results for Group 3:")
+        print(results_df3)
+        print(">>>Feed for Group 3:")
+        print(feed_df3)
+        results_df3.to_csv('results_group3.csv', index=False) 
+        feed_df3.to_csv('feed_group3.csv', index=False)
 
 # # Crop info # considered static in this study
 crop_nutrient_table = util.get_farm_crop_library_table()
@@ -275,9 +328,12 @@ print(crop_nutrient_table)
 
 # # Check existing diet
 # diet_df = pd.read_csv('./data/current_Arlington_diet.csv')
+# price_df = pd.read_csv('./data/feed_price.csv')
 # print(diet_df)
 # nutrient_composition_df = util.calc_nutrient_composition(diet_df, crop_nutrient_table)
 # print(nutrient_composition_df.T)
+# price = util.calc_price(diet_df, price_df)
+# print("feed cost per cow per day: ", price)
 # methane = util.calc_methane(nutrient_composition_df, 'NASEM')
 # print("NASEM methane:", methane)
 # methane = util.calc_methane(nutrient_composition_df, 'Ellis')
@@ -287,5 +343,5 @@ print(crop_nutrient_table)
 DM_vary = 0.01
 NEL_vary = 0.01
 cow_df = util.get_cow_raw_data('./data/cow_raw_data.csv') 
-group_and_opt(2,'nel', cow_df, crop_nutrient_table, DM_vary, NEL_vary, methane_eqn='NASEM', obj = 'both')
+group_and_opt(2,'nel', cow_df, crop_nutrient_table, DM_vary, NEL_vary, methane_eqn='NASEM', obj = 'cost')
 
