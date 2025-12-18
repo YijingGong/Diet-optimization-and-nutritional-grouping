@@ -43,6 +43,7 @@ def optimize_diet(
     animal_count: int,
     nutrient_req_table: pd.DataFrame,
     crop_nutrient_table: pd.DataFrame,
+    feed_price_table: pd.DataFrame,
     methane_eqn: str = "NASEM",
     obj: str = "cost",
     methane_weight: float = 1.0,
@@ -241,15 +242,15 @@ def optimize_diet(
         name="dndf_calc",
     )
 
-    price_df = util.get_feed_price_table()
-    if "price ($/kg)" not in price_df.columns:
+    # Cost calculation
+    if "price ($/kg)" not in feed_price_table.columns:
         raise ValueError("Feed price table must have column 'price ($/kg)'.")
     for c in crops:
-        if c not in price_df.index:
+        if c not in feed_price_table.index:
             raise ValueError(f"Ingredient '{c}' missing from feed price table.")
 
     m.addConstr(
-        cost == sum(feed_on_farm[c] * float(price_df.loc[c, "price ($/kg)"]) for c in crops) / animal_count,
+        cost == sum(feed_on_farm[c] * float(feed_price_table.loc[c, "price ($/kg)"]) for c in crops) / animal_count,
         name="cost_calc",
     )
 
@@ -322,6 +323,7 @@ def group_and_optimize(
     criteria: str,
     cow_df: pd.DataFrame,
     crop_nutrient_table: pd.DataFrame,
+    feed_price_table: pd.DataFrame,  
     DM_vary: float,
     NEL_vary: float,
     methane_eqn: str = "NASEM",
@@ -400,6 +402,7 @@ def group_and_optimize(
             animal_count=len(gdf),
             nutrient_req_table=nutrient_req_table,
             crop_nutrient_table=crop_nutrient_table,
+            feed_price_table=feed_price_table,
             methane_eqn=methane_eqn,
             obj=obj,
             methane_weight=methane_weight,
@@ -450,6 +453,7 @@ def parse_args() -> argparse.Namespace:
 
     p.add_argument("--cow-path", type=Path, required=True, help="Path to cow_raw_data.csv")
     p.add_argument("--crop-path", type=Path, required=True, help="Path to selected_nutrients_*.csv for crop library")
+    p.add_argument("--feed-price-path", type=Path, default=Path("./data/feed_price.csv"), help="Path to feed price CSV")
 
     p.add_argument("--group-num", type=int, default=1, choices=[1, 2, 3], help="Number of nutritional groups")
     p.add_argument("--criteria", type=str, default="milk", choices=["dim", "nel", "milk"], help="Grouping criterion")
@@ -478,12 +482,14 @@ def main() -> None:
 
     crop_nutrient_table = util.get_farm_crop_library_table(str(args.crop_path))
     cow_df = util.get_cow_raw_data(str(args.cow_path))
+    feed_price_table = util.get_feed_price_table(str(args.feed_price_path))
 
     group_and_optimize(
         group_num=args.group_num,
         criteria=args.criteria,
         cow_df=cow_df,
         crop_nutrient_table=crop_nutrient_table,
+        feed_price_table=feed_price_table,
         DM_vary=args.dm_vary,
         NEL_vary=args.nel_vary,
         methane_eqn=args.methane_eqn,
