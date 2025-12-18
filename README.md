@@ -52,10 +52,10 @@ gurobipy
 ├─ run_diet_opt.py          # main CLI script
 ├─ util.py                  # helper functions (data loading, grouping, constraints)
 ├─ data/
-│  ├─ cow_raw_data.csv      # example cow data file
-│  ├─ selected_nutrients_Arlington.csv  # example nutrient data of the available feed ingredients on farm
-│  ├─ min_max_crop_in_diet.csv          # example file specifying the min and max inclusion rate of each feed ingredient
-│  └─ feed_price.csv                    # example feed ingredient price file 
+│  ├─ example_cow_raw_data.csv      # example cow data file
+│  ├─ example_selected_nutrients_Arlington.csv  # example nutrient data of the available feed ingredients on farm
+│  ├─ example_min_max_crop_in_diet.csv          # example file specifying the min and max inclusion rate of each feed ingredient
+│  └─ example_feed_price.csv                    # example feed ingredient price file 
 ├─ outputs/
 └─ requirements.txt
 ```
@@ -64,7 +64,7 @@ gurobipy
 
 ## Input data
 
-### Cow data (`--cow-path`)
+### 1. Cow data (`--cow-path`)
 
 CSV file loaded via `util.get_cow_raw_data(...)`.
 
@@ -73,10 +73,11 @@ Required columns (directly or indirectly):
 - `DMI` — dry matter intake (kg/cow/day)
 - `NEL` — net energy for lactation (used for percentile-based requirement)
 - Additional columns required by grouping functions (e.g., DIM, milk yield)
+Each row represents one cow.
 
 ---
 
-### Crop nutrient library (`--crop-path`)
+### 2. Crop nutrient library (`--crop-path`)
 
 CSV file loaded via `util.get_farm_crop_library_table(...)`.
 
@@ -94,12 +95,31 @@ The DataFrame must be indexed by **ingredient name** and include at least:
 | `DNDF` | Digestible NDF |
 
 Ingredient names must also match those used in:
-
-- `util.get_min_max_feed_table()`
-- `util.get_feed_price_table()`
+- Ingredient min–max inclusion file
+- Feed price file
 
 ---
 
+### 3. Ingredient min–max inclusion file
+
+Loaded via `util.get_min_max_feed_table(...)`.
+
+Expected columns:
+- `Ingredient`
+- `min` (kg as-fed / cow / day)
+- `max` (kg as-fed / cow / day)
+
+---
+
+### 4. Feed price file (`--feed-price-path`)
+
+Loaded via `util.get_feed_price_table(...)`.
+
+Expected columns:
+- `Ingredient`
+- `price ($/kg)`
+
+---
 ## Forage constraint (important)
 
 The model currently assumes the following forage ingredients **by name**:
