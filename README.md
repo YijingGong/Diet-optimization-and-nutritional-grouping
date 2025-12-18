@@ -1,4 +1,4 @@
-# Diet Optimization with Gurobi (Cost & Methane)
+# Lactating Cow Diet Optimization with or without Nutritional Grouping (Cost & Methane)
 
 This repository provides a Python tool to **group dairy cows** and **optimize dairy rations** using a linear programming model solved with **Gurobi**.  
 The model enforces **nutrient requirements**, **ingredient min/max bounds**, and **forage inclusion constraints**, and supports optimization for:
