@@ -182,11 +182,11 @@ python run_diet_opt.py \
 | `--crop-path` | Path to crop nutrient CSV | required |
 | `--group-num` | Number of groups (1, 2, or 3) | `1` |
 | `--criteria` | Grouping criterion: `dim`, `nel`, `milk` | `milk` |
-| `--dm-vary` | Formulate diet within a DMI requirement variation | `0.01` |
-| `--nel-vary` | Formulate diet within a NEL requirement variation | `0.01` |
-| `--methane-eqn` | Methane equation: `NASEM` or `Ellis` | `NASEM` |
+| `--dm-vary` | Formulate diet within a DMI requirement variation (suggested to be within 0.01 to 0.05) | `0.01` |
+| `--nel-vary` | Formulate diet within a NEL requirement variation (suggested to be within 0.01 to 0.05) | `0.01` |
+| `--methane-eqn` | Enteric methane estimation equation: `NASEM` or `Ellis` | `NASEM` |
 | `--obj` | Objective: `cost`, `methane`, `both` | `cost` |
-| `--methane-weight` | Weight on methane when `obj=both` | `1.0` |
+| `--methane-weight` | Weight on methane relative to feed cost when `obj=both` | `1.0` |
 | `--out-dir` | Output directory | `./outputs` |
 | `--quiet` | Suppress solver output | off |
 

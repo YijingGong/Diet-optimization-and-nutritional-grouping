@@ -1,9 +1,10 @@
 Ingredient,Amount as fed (kg/cow/d)
-Corn silage,16.9983
-"Corn grain high moisture, fine grind",9.0147
-"Legume silage, mid maturity",8.4991
-Soybean Hulls,4.5472
+Corn silage,14.7307
+"Legume silage, mid maturity",14.7307
+"Corn grain dry, fine grind",8.6068
 Cottenseed whole,3.0
-"Soybean meal, solvent 48CP",0.5692
-Urea,0.1955
-Calcium carbonate,0.179
+"VitTM Premix, generic",1.0
+Calcium carbonate,0.8994
+Canola meal,0.8279
+Urea,0.615
+"Fat, tallow",0.6045
