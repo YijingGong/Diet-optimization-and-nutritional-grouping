@@ -154,12 +154,14 @@ python -c "import gurobipy as gp; m = gp.Model(); print('Gurobi OK')"
 ## Usage
 
 ### Basic example
-
+Example: two-group diet optimization with a duo cost–methane objective (1:1 as described in our paper)
+This command groups cows into two nutritional groups based on milk production, constructs group-specific nutrient requirements with ±1% flexibility around baseline DMI and NEL, and solves a linear program that minimizes feed cost and enteric methane simultaneously using the NASEM methane equation. Optimized rations and summary results for each group are written to the outputs/ directory.
 ```bash
 python run_diet_opt.py \
-  --cow-path ./data/cow_raw_data.csv \
-  --crop-path ./data/selected_nutrients_Arlington.csv \
-  --feed-price-path ./data/feed_price.csv \
+  --cow-path ./data/example_cow_raw_data.csv \
+  --crop-path ./data/example_selected_nutrients_Arlington.csv \
+  --feed-price-path ./data/example_feed_price.csv \
+  --crop-min-max-path ./data/example_min_max_crop_in_diet.csv \
   --group-num 2 \
   --criteria milk \
   --dm-vary 0.01 \
@@ -180,8 +182,8 @@ python run_diet_opt.py \
 | `--crop-path` | Path to crop nutrient CSV | required |
 | `--group-num` | Number of groups (1, 2, or 3) | `1` |
 | `--criteria` | Grouping criterion: `dim`, `nel`, `milk` | `milk` |
-| `--dm-vary` | DMI requirement variation (see `util`) | `0.01` |
-| `--nel-vary` | NEL requirement variation (see `util`) | `0.01` |
+| `--dm-vary` | Formulate diet within a DMI requirement variation | `0.01` |
+| `--nel-vary` | Formulate diet within a NEL requirement variation | `0.01` |
 | `--methane-eqn` | Methane equation: `NASEM` or `Ellis` | `NASEM` |
 | `--obj` | Objective: `cost`, `methane`, `both` | `cost` |
 | `--methane-weight` | Weight on methane when `obj=both` | `1.0` |

@@ -44,6 +44,7 @@ def optimize_diet(
     nutrient_req_table: pd.DataFrame,
     crop_nutrient_table: pd.DataFrame,
     feed_price_table: pd.DataFrame,
+    crop_min_max_table: pd.DataFrame,
     methane_eqn: str = "NASEM",
     obj: str = "cost",
     methane_weight: float = 1.0,
@@ -192,15 +193,14 @@ def optimize_diet(
     # ----------------------------
     # PART 2: Ingredient min/max constraints
     # ----------------------------
-    crop_min_max_df = util.get_min_max_feed_table()
     for c in crops:
-        if c not in crop_min_max_df.index:
+        if c not in crop_min_max_table.index:
             raise ValueError(
                 f"Ingredient '{c}' not found in util.get_min_max_feed_table(). "
                 "Update your min/max table or remove the ingredient."
             )
-        m.addConstr(feed_on_farm[c] / animal_count >= float(crop_min_max_df.loc[c, "min"]), name=f"min_{c}")
-        m.addConstr(feed_on_farm[c] / animal_count <= float(crop_min_max_df.loc[c, "max"]), name=f"max_{c}")
+        m.addConstr(feed_on_farm[c] / animal_count >= float(crop_min_max_table.loc[c, "min"]), name=f"min_{c}")
+        m.addConstr(feed_on_farm[c] / animal_count <= float(crop_min_max_table.loc[c, "max"]), name=f"max_{c}")
 
     # ----------------------------
     # PART 3: Optional special constraints (example)
@@ -324,6 +324,7 @@ def group_and_optimize(
     cow_df: pd.DataFrame,
     crop_nutrient_table: pd.DataFrame,
     feed_price_table: pd.DataFrame,  
+    crop_min_max_table: pd.DataFrame,
     DM_vary: float,
     NEL_vary: float,
     methane_eqn: str = "NASEM",
@@ -403,6 +404,7 @@ def group_and_optimize(
             nutrient_req_table=nutrient_req_table,
             crop_nutrient_table=crop_nutrient_table,
             feed_price_table=feed_price_table,
+            crop_min_max_table=crop_min_max_table,
             methane_eqn=methane_eqn,
             obj=obj,
             methane_weight=methane_weight,
@@ -453,7 +455,8 @@ def parse_args() -> argparse.Namespace:
 
     p.add_argument("--cow-path", type=Path, required=True, help="Path to cow_raw_data.csv")
     p.add_argument("--crop-path", type=Path, required=True, help="Path to selected_nutrients_*.csv for crop library")
-    p.add_argument("--feed-price-path", type=Path, default=Path("./data/feed_price.csv"), help="Path to feed price CSV")
+    p.add_argument("--feed-price-path", type=Path, default=Path("./data/example_feed_price.csv"), help="Path to feed price CSV")
+    p.add_argument("--crop-min-max-path", type=Path, default=Path("./data/example_min_max_crop_in_diet.csv"), help="Path to crop min/max inclusion CSV")
 
     p.add_argument("--group-num", type=int, default=1, choices=[1, 2, 3], help="Number of nutritional groups")
     p.add_argument("--criteria", type=str, default="milk", choices=["dim", "nel", "milk"], help="Grouping criterion")
@@ -483,6 +486,7 @@ def main() -> None:
     crop_nutrient_table = util.get_farm_crop_library_table(str(args.crop_path))
     cow_df = util.get_cow_raw_data(str(args.cow_path))
     feed_price_table = util.get_feed_price_table(str(args.feed_price_path))
+    crop_min_max_table = util.get_min_max_feed_table(str(args.crop_min_max_path))
 
     group_and_optimize(
         group_num=args.group_num,
@@ -490,6 +494,7 @@ def main() -> None:
         cow_df=cow_df,
         crop_nutrient_table=crop_nutrient_table,
         feed_price_table=feed_price_table,
+        crop_min_max_table=crop_min_max_table,
         DM_vary=args.dm_vary,
         NEL_vary=args.nel_vary,
         methane_eqn=args.methane_eqn,

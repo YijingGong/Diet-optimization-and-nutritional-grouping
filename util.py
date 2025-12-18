@@ -140,7 +140,7 @@ class Utility:
         return crop_nutrient.set_index("index")
 
     @staticmethod
-    def get_min_max_feed_table(path: str = "./data/min_max_crop_in_diet.csv") -> pd.DataFrame:
+    def get_min_max_feed_table(path: str = "./data/example_min_max_crop_in_diet.csv") -> pd.DataFrame:
         """
         Load ingredient-level minimum and maximum inclusion rates.
 
