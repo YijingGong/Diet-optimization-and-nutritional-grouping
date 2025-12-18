@@ -4,6 +4,7 @@ from gurobipy import Model, GRB
 from util import Utility as util
 
 NEL_req_percentile = util.NEL_req_percentile
+w = 1 # weight for methane in the weighted sum combined objective function
 # cp_price = 0.59 # $/kg
 # nel_price = 0.06 # $/Mcal
 
@@ -187,8 +188,7 @@ def optimize(animal_count, nutrient_req_table, crop_nutrient_table, methane_eqn,
     elif obj == 'cost':
         m.setObjective(cost, GRB.MINIMIZE)
     elif obj == 'both':
-        m.setObjectiveN(cost, 0, GRB.MINIMIZE)
-        m.setObjectiveN(methane, 1, GRB.MINIMIZE)
+        m.setObjective(cost + w * methane, GRB.MINIMIZE)
     else:
         raise ValueError("Invalid objective function. Use 'methane', 'cost', or 'both'.")
 
@@ -289,7 +289,8 @@ def group_and_opt(group_num, criteria, cow_df, crop_nutrient_table, DM_vary, NEL
             feed_df3.to_csv('feed_group3.csv', index=False)
 
 # # Crop info # considered static in this study
-crop_nutrient_table = util.get_farm_crop_library_table()
+crop_path = "./data/selected_nutrients_Arlington.csv"
+crop_nutrient_table = util.get_farm_crop_library_table(crop_path)
 print(crop_nutrient_table)
 
 # # Check existing diet
@@ -309,5 +310,5 @@ print(crop_nutrient_table)
 DM_vary = 0.01
 NEL_vary = 0.01
 cow_df = util.get_cow_raw_data('./data/cow_raw_data.csv') 
-group_and_opt(1,'dim', cow_df, crop_nutrient_table, DM_vary, NEL_vary, methane_eqn='NASEM', obj = 'cost')
+group_and_opt(2,'milk', cow_df, crop_nutrient_table, DM_vary, NEL_vary, methane_eqn='NASEM', obj = 'both')
 

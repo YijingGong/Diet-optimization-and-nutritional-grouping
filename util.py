@@ -45,9 +45,9 @@ class Utility:
         nutrient_req_table = nutrient_req_table.set_index('minmax').T
         return nutrient_req_table
 
-    def get_farm_crop_library_table():
+    def get_farm_crop_library_table(path):
         # Read the crop library from the CSV file
-        crop_nutrient = pd.read_csv("./data/selected_nutrients_Arlington.csv")
+        crop_nutrient = pd.read_csv(path)
         crop_nutrient.rename(columns={
             'DM, % as fed': 'DM',
             'DE base, Mcal/kg': 'DE',
