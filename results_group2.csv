@@ -1,12 +1,12 @@
 Variable,Value
-$/cow/d,5.2
-methane (g/cow/d),525.5
-dmi (kg/cow/d),26.56
-dm (%),82.95
-NEL (Mcal/kg),1.9
-CP (% in DM),16.06
-NDF (% in DM),33.33
-STARCH (% in DM),30.3
+$/cow/d,5.94
+methane (g/cow/d),553.68
+dmi (kg/cow/d),28.2
+dm (%),56.51
+NEL (Mcal/kg),1.84
+CP (% in DM),15.16
+NDF (% in DM),32.15
+STARCH (% in DM),29.7
 FAT (% in DM),4.61
-TFA (% in DM),4.08
-DNDF (% in DM),14.6
+TFA (% in DM),4.01
+DNDF (% in DM),11.42
