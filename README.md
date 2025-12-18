@@ -1,6 +1,6 @@
 # Diet Optimization with Gurobi (Cost & Methane)
 
-This repository provides a command-line tool to **group dairy cows** (optionally) and **optimize dairy rations** using a linear programming model solved with **Gurobi**.  
+This repository provides a Python tool to **group dairy cows** and **optimize dairy rations** using a linear programming model solved with **Gurobi**.  
 The model enforces **nutrient requirements**, **ingredient min/max bounds**, and **forage inclusion constraints**, and supports optimization for:
 
 - **Feed cost** ($/cow/day)
@@ -18,7 +18,7 @@ Methane emissions can be calculated using either the **NASEM** or **Ellis** equa
   - days in milk (DIM)
   - net energy requirement (NEL)
   - milk production
-- Cost-only, methane-only, or joint-objective optimization
+- Cost-only, methane-only, or duo-objective optimization
 - CSV-based inputs and outputs
 - Reproducible command-line interface
 
@@ -45,15 +45,17 @@ gurobipy
 
 ---
 
-## Repository structure (recommended)
+## Repository structure 
 
 ```text
 .
 ├─ run_diet_opt.py          # main CLI script
 ├─ util.py                  # helper functions (data loading, grouping, constraints)
 ├─ data/
-│  ├─ cow_raw_data.csv
-│  └─ selected_nutrients_Arlington.csv
+│  ├─ cow_raw_data.csv      # example cow data file
+│  ├─ selected_nutrients_Arlington.csv  # example nutrient data of the available feed ingredients on farm
+│  ├─ min_max_crop_in_diet.csv          # example file specifying the min and max inclusion rate of each feed ingredient
+│  └─ feed_price.csv                    # example feed ingredient price file 
 ├─ outputs/
 └─ requirements.txt
 ```
@@ -189,6 +191,4 @@ Ingredient inclusion rates:
 ---
 
 ## License
-
-Add a `LICENSE` file to specify usage terms.  
-The **MIT License** is commonly used for academic code releases.
+**MIT License** 
